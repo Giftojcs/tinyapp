@@ -14,6 +14,10 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+app.get("/urls", (req, res) => {
+  res.render("urls_index", { urls: urlDatabase });
+});
+
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
@@ -43,6 +47,16 @@ app.get("/u/:shortURL", (req, res) => {
 app.post("/urls", (req, res) => {
   console.log(req.body); // Log the POST request body to the console
   res.send("Ok"); // Respond with 'Ok' (we will replace this)
+});
+
+app.post("/urls/:id/delete", (req, res) => {
+  const urlId = req.params.id;
+  if (urlDatabase[urlId]) {
+    delete urlDatabase[urlId];
+    res.redirect("/urls");
+  } else {
+    res.status(404).send("URL not found");
+  }
 });
 
 app.listen(PORT, () => {
