@@ -1,17 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TinyApp - Show URL</title>
-</head>
-<body>
-  <h3>Show URL</h3>
-  <form method="POST" action="/urls/<%= id %>">
-    <label for="longURL">Long URL:</label>
-    <input type="text" id="longURL" name="longURL" value="<%= longURL %>">
-    <button type="submit">Update</button>
-  </form>
-</body>
-</html>
+<header>
+  <nav class="navbar navbar-expand-md navbar-dark bg-success">
+    <a class="navbar-brand" href="/urls">TinyApp</a>
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-toggle="collapse"
+      data-target="#navbarNavAltMarkup"
+      aria-controls="navbarNavAltMarkup"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+      <div class="navbar-nav">
+        <a class="nav-item nav-link" href="/urls">My URLs</a>
+        <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
+      </div>
+      <% if (username) { %>
+        <span class="navbar-text">
+          Logged in as: <%= username %>
+          <form action="/logout" method="POST" class="d-inline">
+            <button type="submit" class="btn btn-link">Logout</button>
+          </form>
+        </span>
+      <% } else { %>
+        <span class="navbar-text">
+          <a href="/login">Login</a>
+        </span>
+      <% } %>
+    </div>
+  </nav>
+</header>
 
