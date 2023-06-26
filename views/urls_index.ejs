@@ -1,32 +1,36 @@
-<tbody>
-  <tr>
-    <td><a href="/u/b2xVn2">b2xVn2</a></td>
-    <td>http://www.lighthouselabs.ca</td>
-    <td>
-      <form method="POST" action="/urls/b2xVn2/delete" style="display: inline;">
-        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-      </form>
-    </td>
-  </tr>
-  <tr>
-    <td><a href="/u/9sm5xK">9sm5xK</a></td>
-    <td>http://www.google.com</td>
-    <td>
-      <form method="POST" action="/urls/9sm5xK/delete" style="display: inline;">
-        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-      </form>
-    </td>
-  </tr>
-  <% for (let id in urls) { %>
-  <tr>
-    <td><a href="/u/<%= id %>"><%= id %></a></td>
-    <td><%= urls[id] %></td>
-    <td>
-      <form method="POST" action="/urls/<%= id %>/delete" style="display: inline;">
-        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-      </form>
-    </td>
-  </tr>
-  <% } %>
-</tbody>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TinyApp - My URLs</title>
+</head>
+<body>
+  <h3>My URLs</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Short URL ID</th>
+        <th>Long URL</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for (let id in urls) { %>
+        <tr>
+          <td><%= id %></td>
+          <td><%= urls[id] %></td>
+          <td><a href="/urls/<%= id %>">Edit</a></td>
+          <td>
+            <form method="POST" action="/urls/<%= id %>/delete">
+              <button type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</body>
+</html>
 
