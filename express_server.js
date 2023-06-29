@@ -1,90 +1,144 @@
-const express = require("express");
+const express = require('express');
+const session = require('express-session');
+const bcrypt = require('bcrypt');
 const app = express();
-const PORT = 3000;
+const PORT = 5000;
 
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
-
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
-
+// Middleware and configuration setup
+app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
-app.set("view engine", "ejs");
+app.use(express.static('public'));
+app.use(
+  session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 
-// Root route
-app.get("/", (req, res) => {
-  res.send("Hello!");
+// Temporary user database (for demo purposes only)
+const users = {};
+
+// Temporary URL database (for demo purposes only)
+const urlDatabase = {};
+
+// Home page
+app.get('/', (req, res) => {
+  res.send('Welcome to TinyApp!');
 });
 
-// URLs index route
-app.get("/urls", (req, res) => {
-  const templateVars = {
-    username: req.cookies["username"], // Passes the "username" cookie to the template
-    urls: urlDatabase // Passes the urlDatabase object to the template
-  };
+// Registration page
+app.get('/register', (req, res) => {
+  res.render('register');
+});
 
-  if (!req.cookies["username"]) {
-    res.cookie("username", "your-username-here"); // Sets a default value for "username" cookie if it doesn't exist
+// Registration endpoint
+app.post('/register', (req, res) => {
+  const { email, password } = req.body;
+
+  // Check if the email already exists in the user database
+  const userExists = Object.values(users).find(user => user.email === email);
+  if (userExists) {
+    res.status(400).send('User already exists.');
+    return;
   }
 
-  res.render("urls_index", templateVars); // Renders the "urls_index" template with the provided variables
-});
+  // Generate a unique user ID
+  const userId = generateRandomString();
 
-// New URL route
-app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    username: req.cookies["username"] // Passes the "username" cookie to the template
+  // Hash the password
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
+  // Create a new user object
+  const newUser = {
+    id: userId,
+    email: email,
+    password: hashedPassword,
   };
-  res.render("urls_new", templateVars); // Renders the "urls_new" template with the provided variables
+
+  // Store the new user in the user database
+  users[userId] = newUser;
+
+  // Set the user session
+  req.session.user_id = userId;
+
+  res.redirect('/urls');
 });
 
-// Show URL route
-app.get("/urls/:id", (req, res) => {
-  const templateVars = {
-    username: req.cookies["username"], // Passes the "username" cookie to the template
-    id: req.params.id, // Captures the dynamic parameter ":id"
-    longURL: urlDatabase[req.params.id] // Retrieves the corresponding longURL from the urlDatabase
-  };
-  res.render("urls_show", templateVars); // Renders the "urls_show" template with the provided variables
+// Login page
+app.get('/login', (req, res) => {
+  res.render('login');
 });
 
-app.get("/login", (req, res) => {
-  res.render("login"); // Renders the "login" template
-});
+// Login endpoint
+app.post('/auth/login', (req, res) => {
+  const { email, password } = req.body;
 
-app.post("/login", (req, res) => {
-  const { username } = req.body; // Retrieve the username from the request body
-  res.cookie("username", username); // Set the "username" cookie with the provided value
-  res.redirect("/urls"); // Redirect to the URLs index route
-});
+  // Find the user with the matching email in the user database
+  const user = Object.values(users).find(user => user.email === email);
 
-// Update URL route
-app.post("/urls/:id", (req, res) => {
-  const urlId = req.params.id;
-  const newLongURL = req.body.longURL;
-  if (urlDatabase[urlId]) {
-    urlDatabase[urlId] = newLongURL;
-    res.redirect("/urls"); // Redirects to the URLs index route after updating the longURL
+  // Check if the user exists and the password is correct
+  if (user && bcrypt.compareSync(password, user.password)) {
+    // Set the user session
+    req.session.user_id = user.id;
+    res.redirect('/urls');
   } else {
-    res.status(404).send("URL not found"); // Sends a 404 response if the URL doesn't exist
+    res.status(401).send('Invalid email or password.');
   }
-app.post("/login", (req, res) => {
-  const username = req.body.username; // Retrieve the username from the request body
-  res.cookie("username", username); // Set the "username" cookie with the provided value
-  res.redirect("/urls"); // Redirect to the URLs index route
 });
 
-
+// Logout endpoint
+app.post('/logout', (req, res) => {
+  // Clear the user session
+  req.session.destroy();
+  res.redirect('/login');
 });
-app.post("/logout", (req, res) => {
-  res.clearCookie("username"); // Clears the "username" cookie
-  res.redirect("/urls"); // Redirects to the URLs index route
+
+// Shorten URL
+app.post('/urls', (req, res) => {
+  if (req.session.user_id) {
+    const longURL = req.body.longURL;
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = { longURL: longURL, userID: req.session.user_id };
+    res.redirect(`/urls/${shortURL}`);
+  } else {
+    res.status(401).send('Please log in to create a shortened URL.');
+  }
 });
 
+// Display URLs
+app.get('/urls', (req, res) => {
+  if (req.session.user_id) {
+    const userURLs = Object.values(urlDatabase).filter(url => url.userID === req.session.user_id);
+    res.render('urls', { urls: userURLs });
+  } else {
+    res.redirect('/login');
+  }
+});
+
+// Redirect to long URL
+app.get('/u/:shortURL', (req, res) => {
+  const shortURL = req.params.shortURL;
+  const urlEntry = urlDatabase[shortURL];
+  if (urlEntry && urlEntry.longURL) {
+    res.redirect(urlEntry.longURL);
+  } else {
+    res.status(404).send('URL not found.');
+  }
+});
+
+// Helper function to generate a random alphanumeric string
+function generateRandomString() {
+  let result = '';
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const length = 6;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
 
 app.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
 

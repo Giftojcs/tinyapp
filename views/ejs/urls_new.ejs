@@ -1,0 +1,9 @@
+<%- include('layout', { loggedIn: true, user: currentUser }) %>
+
+<h1>Create a New Short Link</h1>
+
+<form method="POST" action="/urls">
+  <input type="text" name="longURL" placeholder="Enter a long URL" required>
+  <button type="submit">Shorten</button>
+</form>
+

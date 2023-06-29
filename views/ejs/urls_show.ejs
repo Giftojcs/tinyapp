@@ -1,0 +1,14 @@
+<%- include('layout', { loggedIn: true, user: currentUser }) %>
+
+<% if (url) { %>
+  <h1>URL Details</h1>
+
+  <p>Short URL: <%= url.shortURL %></p>
+  <form method="POST" action="/urls/<%= url.id %>">
+    <input type="text" name="longURL" value="<%= url.longURL %>" required>
+    <button type="submit">Update</button>
+  </form>
+<% } else { %>
+  <p>URL not found.</p>
+<% } %>
+

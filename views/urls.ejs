@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>URLs</title>
+</head>
+<body>
+  <h1>URLs</h1>
+  <ul>
+    <% for (const url of urls) { %>
+      <li>
+        <a href="<%= url.longURL %>"><%= url.shortURL %></a>
+      </li>
+    <% } %>
+  </ul>
+</body>
+</html>
+
