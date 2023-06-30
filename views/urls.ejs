@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <title>URLs</title>
 </head>
 <body>
-  <h1>URLs</h1>
+  <h1>Welcome <%= user.email %></h1>
+  <h2>My URLs:</h2>
   <ul>
-    <% for (const url of urls) { %>
+    <% Object.keys(urls).forEach(shortURL => { %>
       <li>
-        <a href="<%= url.longURL %>"><%= url.shortURL %></a>
+        <%= shortURL %> : <%= urls[shortURL].longURL %>
+        <form action="/urls/<%= shortURL %>/delete" method="POST" style="display: inline;">
+          <button type="submit">Delete</button>
+        </form>
+        <a href="/urls/<%= shortURL %>/edit">Edit</a>
       </li>
-    <% } %>
+    <% }); %>
   </ul>
+  <a href="/urls/new">Create New URL</a>
+  <form action="/logout" method="POST">
+    <button type="submit">Logout</button>
+  </form>
 </body>
 </html>
 
