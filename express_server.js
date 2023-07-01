@@ -1,10 +1,12 @@
 const express = require('express');
 const session = require('express-session');
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
+
 const app = express();
 const PORT = 5000;
 
-// Middleware and configuration setup
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -16,127 +18,162 @@ app.use(
   })
 );
 
-// Temporary user database (for demo purposes only)
-const users = {};
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Temporary URL database (for demo purposes only)
+const users = {};
 const urlDatabase = {};
 
-// Home page
-app.get('/', (req, res) => {
-  res.send('Welcome to TinyApp!');
-});
-
-// Registration page
-app.get('/register', (req, res) => {
-  res.render('register');
-});
-
-// Registration endpoint
-app.post('/register', (req, res) => {
-  const { email, password } = req.body;
-
-  // Check if the email already exists in the user database
-  const userExists = Object.values(users).find(user => user.email === email);
-  if (userExists) {
-    res.status(400).send('User already exists.');
-    return;
+function generateRandomID() {
+  const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let randomID = '';
+  for (let i = 0; i < 10; i++) {
+    randomID += characters[Math.floor(Math.random() * characters.length)];
   }
+  return randomID;
+}
 
-  // Generate a unique user ID
-  const userId = generateRandomString();
+function requireLogin(req, res, next) {
+  const userID = req.session.user_id;
+  if (!userID || !users[userID]) {
+    res.redirect('/login');
+  } else {
+    next();
+  }
+}
 
-  // Hash the password
-  const hashedPassword = bcrypt.hashSync(password, 10);
-
-  // Create a new user object
-  const newUser = {
-    id: userId,
-    email: email,
-    password: hashedPassword,
-  };
-
-  // Store the new user in the user database
-  users[userId] = newUser;
-
-  // Set the user session
-  req.session.user_id = userId;
-
-  res.redirect('/urls');
+app.get('/', (req, res) => {
+  const userID = req.session.user_id;
+  if (!userID || !users[userID]) {
+    res.redirect('/login');
+  } else {
+    res.redirect('/urls');
+  }
 });
 
-// Login page
 app.get('/login', (req, res) => {
   res.render('login');
 });
 
-// Login endpoint
-app.post('/auth/login', (req, res) => {
-  const { email, password } = req.body;
-
-  // Find the user with the matching email in the user database
-  const user = Object.values(users).find(user => user.email === email);
-
-  // Check if the user exists and the password is correct
-  if (user && bcrypt.compareSync(password, user.password)) {
-    // Set the user session
-    req.session.user_id = user.id;
-    res.redirect('/urls');
-  } else {
-    res.status(401).send('Invalid email or password.');
-  }
+app.get('/register', (req, res) => {
+  res.render('register');
 });
 
-// Logout endpoint
+app.post('/register', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    res.status(400).send('Email and password are required');
+    return;
+  }
+
+  const existingUser = Object.values(users).find(user => user.email === email);
+  if (existingUser) {
+    res.status(400).send('Email address already registered');
+    return;
+  }
+
+  const userID = generateRandomID();
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
+  users[userID] = {
+    id: userID,
+    email: email,
+    password: hashedPassword,
+  };
+
+  req.session.user_id = userID;
+  res.redirect('/urls');
+});
+
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = Object.values(users).find(user => user.email === email);
+
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    res.status(401).send('Invalid email or password');
+    return;
+  }
+
+  req.session.user_id = user.id;
+  res.redirect('/urls');
+});
+
 app.post('/logout', (req, res) => {
-  // Clear the user session
   req.session.destroy();
+  res.clearCookie('user_id');
   res.redirect('/login');
 });
 
-// Shorten URL
-app.post('/urls', (req, res) => {
-  if (req.session.user_id) {
-    const longURL = req.body.longURL;
-    const shortURL = generateRandomString();
-    urlDatabase[shortURL] = { longURL: longURL, userID: req.session.user_id };
-    res.redirect(`/urls/${shortURL}`);
-  } else {
-    res.status(401).send('Please log in to create a shortened URL.');
-  }
+app.get('/urls', requireLogin, (req, res) => {
+  const userID = req.session.user_id;
+  const user = users[userID];
+  const userURLs = Object.keys(urlDatabase)
+    .filter(shortURL => urlDatabase[shortURL].userID === userID)
+    .reduce((obj, key) => {
+      obj[key] = urlDatabase[key];
+      return obj;
+    }, {});
+
+  res.render('urls', { user, urls: userURLs });
 });
 
-// Display URLs
-app.get('/urls', (req, res) => {
-  if (req.session.user_id) {
-    const userURLs = Object.values(urlDatabase).filter(url => url.userID === req.session.user_id);
-    res.render('urls', { urls: userURLs });
-  } else {
-    res.redirect('/login');
-  }
+app.get('/urls/new', requireLogin, (req, res) => {
+  const userID = req.session.user_id;
+  const user = users[userID];
+  res.render('urls_new', { user });
 });
 
-// Redirect to long URL
-app.get('/u/:shortURL', (req, res) => {
+app.post('/urls', requireLogin, (req, res) => {
+  const userID = req.session.user_id;
+  const longURL = req.body.longURL;
+  const shortURL = generateRandomID();
+
+  urlDatabase[shortURL] = {
+    longURL: longURL,
+    userID: userID,
+  };
+
+  res.redirect(`/urls/${shortURL}`);
+});
+
+app.get('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   const urlEntry = urlDatabase[shortURL];
   if (urlEntry && urlEntry.longURL) {
-    res.redirect(urlEntry.longURL);
+    res.render('urls_show', { user: users[req.session.user_id], urls: urlDatabase, shortURL }); // Add `urls` object to the render options
   } else {
     res.status(404).send('URL not found.');
   }
 });
 
-// Helper function to generate a random alphanumeric string
-function generateRandomString() {
-  let result = '';
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const length = 6;
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
+
+app.post('/urls/:shortURL/delete', requireLogin, (req, res) => {
+  const userID = req.session.user_id;
+  const shortURL = req.params.shortURL;
+
+  if (!urlDatabase[shortURL] || urlDatabase[shortURL].userID !== userID) {
+    res.status(404).send('URL not found');
+    return;
   }
-  return result;
-}
+
+  delete urlDatabase[shortURL];
+  res.redirect('/urls');
+});
+
+app.post('/urls/:shortURL/edit', requireLogin, (req, res) => {
+  const userID = req.session.user_id;
+  const shortURL = req.params.shortURL;
+  const newLongURL = req.body.longURL;
+
+  if (!urlDatabase[shortURL] || urlDatabase[shortURL].userID !== userID) {
+    res.status(404).send('URL not found');
+    return;
+  }
+
+  urlDatabase[shortURL].longURL = newLongURL;
+  res.redirect('/urls');
+});
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
