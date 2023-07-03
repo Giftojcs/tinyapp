@@ -1,29 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<<<<<<< HEAD
   <meta charset="utf-8">
-  <title>URLs</title>
-</head>
-<body>
-  <h1>Welcome <%= user.email %></h1>
-  <h2>My URLs:</h2>
-  <ul>
-    <% Object.keys(urls).forEach(shortURL => { %>
-      <li>
-        <%= shortURL %> : <%= urls[shortURL].longURL %>
-        <form action="/urls/<%= shortURL %>/delete" method="POST" style="display: inline;">
-          <button type="submit">Delete</button>
-        </form>
-        <a href="/urls/<%= shortURL %>/edit">Edit</a>
-      </li>
-    <% }); %>
-  </ul>
-  <a href="/urls/new">Create New URL</a>
-  <form action="/logout" method="POST">
-    <button type="submit">Logout</button>
-  </form>
-=======
   <title>My URLs</title>
 </head>
 <body>
@@ -45,7 +23,6 @@
     <h1>Please log in to view your URLs.</h1>
     <a href="/login">Login</a>
   <% } %>
->>>>>>> feature/user-registration
 </body>
 </html>
 
