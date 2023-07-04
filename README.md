@@ -11,7 +11,7 @@ TinyApp is a simple URL shortening application that allows users to shorten long
 - Customizable user dashboard to manage their shortened URLs
 - Responsive and user-friendly interface
 
-## Screenshot: [Tinyapp screenshoot.docx](https://github.com/Giftojcs/tinyapp/files/11918859/Tinyapp.screenshoot.docx)
+## Screenshot: https://github.com/Giftojcs/tinyapp/tree/4538317f732e85671e7b35a24c715da8a0a33b28/images 
 
 ## Installation
 
