@@ -3,7 +3,8 @@ const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs'); // Require bcryptjs library
 const app = express();
 const PORT = 8080;
-
+const helpers = require('./helpers');
+const { getUserByEmail } = require('./helpers');
 app.use(cookieSession({
   name: 'session',
   keys: ['your-secret-key'], // Replace with your own secret key
@@ -183,14 +184,7 @@ app.post('/login', (req, res) => {
     return;
   }
 
-  let user;
-
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      user = users[userId];
-      break;
-    }
-  }
+  const user = helpers.getUserByEmail(email, users);
 
   if (!user || !bcrypt.compareSync(password, user.password)) {
     res.status(403).send('Invalid email or password.'); // Compare hashed password with provided password
