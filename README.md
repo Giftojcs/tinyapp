@@ -22,7 +22,7 @@ TinyApp is a simple URL shortening application that allows users to shorten long
 ## Usage
 
 1. Start the server: `npm start`
-2. Access the application in your browser at: `http://localhost:4000`
+2. Access the application in your browser at: `http://localhost:8080`
 
 ## Dependencies
 
