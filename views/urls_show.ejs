@@ -7,10 +7,10 @@
 <body>
   <h1>URL Details</h1>
   <p>Short URL: <%= shortURL %></p>
-  <p>Long URL: <%= urls[shortURL].longURL %></p>
+  <p>Long URL: <%= url.longURL %></p>
   <form action="/urls/<%= shortURL %>" method="POST">
     <label for="longURL">New Long URL:</label>
-    <input type="text" name="longURL" value="<%= urls[shortURL].longURL %>" required><br>
+    <input type="text" name="longURL" value="<%= url.longURL %>" required><br>
     <input type="submit" value="Update URL">
   </form>
   <form action="/urls/<%= shortURL %>/delete" method="POST">

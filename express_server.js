@@ -2,7 +2,7 @@ const express = require('express');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs'); // Require bcryptjs library
 const app = express();
-const PORT = 8080;
+const PORT = 3000;
 const helpers = require('./helpers');
 const { getUserByEmail } = require('./helpers');
 app.use(cookieSession({
