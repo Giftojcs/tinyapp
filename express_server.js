@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs'); // Require bcryptjs library
 const app = express();
 const PORT = 3000;
 const helpers = require('./helpers');
+const { urlDatabase, users } = require('./database'); // Require the database.js file
 
 app.use(cookieSession({
   name: 'session',
@@ -12,25 +13,6 @@ app.use(cookieSession({
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
-
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: 'https://www.tsn.ca',
-    userID: 'aJ48lW',
-  },
-  i3BoGr: {
-    longURL: 'https://www.google.ca',
-    userID: 'aJ48lW',
-  },
-};
-
-const users = {
-  aJ48lW: {
-    id: 'aJ48lW',
-    email: 'user@example.com',
-    password: 'password',
-  },
-};
 
 const urlsForUser = (id) => {
   const userURLs = {};
