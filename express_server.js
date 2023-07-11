@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs'); // Require bcryptjs library
 const app = express();
 const PORT = 3000;
 const helpers = require('./helpers');
-const { getUserByEmail } = require('./helpers');
+
 app.use(cookieSession({
   name: 'session',
   keys: ['your-secret-key'], // Replace with your own secret key
@@ -44,6 +44,11 @@ const urlsForUser = (id) => {
   return userURLs;
 };
 
+app.use((req, res, next) => {
+  res.locals.user = users[req.session.user_id];
+  next();
+});
+
 app.get('/', (req, res) => {
   res.redirect('/urls');
 });
@@ -57,7 +62,7 @@ app.get('/urls', (req, res) => {
   }
 
   const userURLs = urlsForUser(userID);
-  res.render('urls_index', { urls: userURLs, user: users[userID] });
+    res.render('urls_index', { urls: userURLs, user: users[userID], showCreateLink: true });
 });
 
 app.get('/urls/new', (req, res) => {
@@ -68,8 +73,14 @@ app.get('/urls/new', (req, res) => {
     return;
   }
 
-  res.render('urls_new', { user: users[userID] });
+  res.render('urls_new');
 });
+
+app.get('/logout', (req, res) => {
+  req.session = null;
+  res.redirect('/login');
+});
+
 
 app.get('/urls/:shortURL', (req, res) => {
   const userID = req.session.user_id;
@@ -81,12 +92,12 @@ app.get('/urls/:shortURL', (req, res) => {
     return;
   }
 
-  const templateVars = {
-    shortURL,
-    url,
-    user: users[userID]
-  };
-  res.render('urls_show', templateVars);
+  if (url.userID !== userID) {
+    res.status(403).send('You do not own this URL.');
+    return;
+  }
+
+  res.render('urls_show', { shortURL, url });
 });
 
 app.post('/urls', (req, res) => {
@@ -178,7 +189,7 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  
+
   if (!email || !password) {
     res.status(400).send('Email and password fields are required.');
     return;
@@ -195,14 +206,9 @@ app.post('/login', (req, res) => {
   res.redirect('/urls');
 });
 
-app.get('/logout', (req, res) => {
-  req.session.user_id = null;
-  res.redirect('/login');
-});
-
 app.post('/logout', (req, res) => {
   req.session = null;
-  res.redirect('/urls');
+  res.redirect('/login');
 });
 
 app.listen(PORT, () => {
