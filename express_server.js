@@ -2,8 +2,9 @@ const express = require('express');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs'); // Require bcryptjs library
 const app = express();
-const PORT = 3000;
+const PORT = 8080;
 const helpers = require('./helpers');
+const { getUserByEmail, comparePasswords, urlsForUser } = require('./helpers');
 const { urlDatabase, users } = require('./database'); // Require the database.js file
 
 app.use(cookieSession({
@@ -14,22 +15,22 @@ app.use(cookieSession({
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 
-const urlsForUser = (id) => {
-  const userURLs = {};
-
-  for (const shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID === id) {
-      userURLs[shortURL] = urlDatabase[shortURL];
-    }
-  }
-
-  return userURLs;
-};
-
 app.use((req, res, next) => {
   res.locals.user = users[req.session.user_id];
   next();
 });
+
+app.get("/u/:id", (req, res) => {
+  const shortURL = req.params.id;
+  const longURL = urlDatabase[shortURL];
+
+  if (longURL) {
+    res.redirect(longURL);
+  } else {
+    res.status(404).send("URL not found");
+  }
+});
+
 
 app.get('/', (req, res) => {
   res.redirect('/urls');
@@ -43,7 +44,7 @@ app.get('/urls', (req, res) => {
     return;
   }
 
-  const userURLs = urlsForUser(userID);
+  const userURLs = urlsForUser(userID, urlDatabase);
     res.render('urls_index', { urls: userURLs, user: users[userID], showCreateLink: true });
 });
 
@@ -81,6 +82,19 @@ app.get('/urls/:shortURL', (req, res) => {
 
   res.render('urls_show', { shortURL, url });
 });
+
+app.get('/u/:shortURL', (req, res) => {
+  const shortURL = req.params.shortURL;
+  const url = urlDatabase[shortURL];
+
+  if (!url) {
+    res.status(404).send('URL not found');
+    return;
+  }
+
+  res.redirect(url.longURL);
+});
+
 
 app.post('/urls', (req, res) => {
   const userID = req.session.user_id;
