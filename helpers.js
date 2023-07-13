@@ -1,14 +1,32 @@
 // helpers.js
 
-const getUserByEmail = function(email, database) {
-  for (const userId in database) {
-    const user = database[userId];
+const bcrypt = require('bcryptjs');
+
+const getUserByEmail = function(email, users) {
+  for (const userId in users) {
+    const user = users[userId];
     if (user.email === email) {
       return user;
     }
   }
-  return undefined;
+  return null;
 };
 
-module.exports = { getUserByEmail };
+const comparePasswords = function(password, hashedPassword) {
+  return bcrypt.compareSync(password, hashedPassword);
+};
+
+const urlsForUser = (id,urlDatabase) => {
+  const userURLs = {};
+
+  for (const shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID === id) {
+      userURLs[shortURL] = urlDatabase[shortURL];
+    }
+  }
+
+  return userURLs;
+};
+
+module.exports = { getUserByEmail, comparePasswords, urlsForUser };
 
