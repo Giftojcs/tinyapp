@@ -3,8 +3,7 @@ const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs'); // Require bcryptjs library
 const app = express();
 const PORT = 8080;
-const helpers = require('./helpers');
-const { getUserByEmail, comparePasswords, urlsForUser } = require('./helpers');
+const { getUserByEmail, urlsForUser } = require('./helpers');
 const { urlDatabase, users } = require('./database'); // Require the database.js file
 
 app.use(cookieSession({
@@ -22,11 +21,18 @@ app.use((req, res, next) => {
 
 app.get("/u/:id", (req, res) => {
   const shortURL = req.params.id;
-  const longURL = urlDatabase[shortURL];
-
-  if (longURL) {
-    res.redirect(longURL);
+  console.log('--------')
+  const URLOBJECT = urlDatabase[shortURL];
+  console.log('shortURL', shortURL);
+  console.log('URL', URLOBJECT);
+  if (URLOBJECT) {
+    console.log('redirecting to' + URLOBJECT);
+    const destination = URLOBJECT.longURL
+    res.redirect(destination);
+    console.log('destination', destination);
   } else {
+    console.log('not found');
+    
     res.status(404).send("URL not found");
   }
 });
@@ -40,7 +46,7 @@ app.get('/urls', (req, res) => {
   const userID = req.session.user_id;
 
   if (!userID) {
-    res.status(401).send('Please log in or register first.');
+    res.redirect('/register')
     return;
   }
 
@@ -69,8 +75,11 @@ app.get('/urls/:shortURL', (req, res) => {
   const userID = req.session.user_id;
   const shortURL = req.params.shortURL;
   const url = urlDatabase[shortURL];
-
+console.log('shortURL', shortURL);
+console.log('url', url);
+console.log('urlDatabase', urlDatabase);
   if (!url) {
+    console.log(404);
     res.status(404).send('URL not found');
     return;
   }
@@ -79,7 +88,33 @@ app.get('/urls/:shortURL', (req, res) => {
     res.status(403).send('You do not own this URL.');
     return;
   }
+ res.render('urls_show', { shortURL: shortURL, url: url, user: users[userID],})
+});
 
+
+app.get('/', (req, res) => {
+  res.redirect('/urls');
+});
+
+app.get('/urls', (req, res) => {
+  const userID = req.session.user_id;
+
+  if (!userID) {
+    res.redirect('/login'); 
+    return;
+  }
+
+  const userURLs = urlsForUser(userID, urlDatabase);
+    res.render('urls_index', { urls: userURLs, user: users[userID], showCreateLink: true });
+});
+
+app.get('/urls/new', (req, res) => {
+  const userID = req.session.user_id;
+
+  if (!userID) {
+    res.redirect('/login');
+    return;
+  }
   res.render('urls_show', { shortURL, url });
 });
 
@@ -103,13 +138,16 @@ app.post('/urls', (req, res) => {
     res.status(401).send('Please log in or register first.');
     return;
   }
+  console.log('/urlsDatabase', urlDatabase);
 
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
 
   urlDatabase[shortURL] = { longURL, userID };
+  console.log('/urlsDatabase after', urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 });
+
 
 app.post('/urls/:shortURL', (req, res) => {
   const userID = req.session.user_id;
@@ -191,7 +229,7 @@ app.post('/login', (req, res) => {
     return;
   }
 
-  const user = helpers.getUserByEmail(email, users);
+  const user = getUserByEmail(email, users);
 
   if (!user || !bcrypt.compareSync(password, user.password)) {
     res.status(403).send('Invalid email or password.'); // Compare hashed password with provided password
@@ -221,4 +259,3 @@ function generateRandomString() {
   }
   return result;
 }
-

@@ -2,11 +2,20 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <!-- Bootstrap CSS -->
+  <link
+  rel="stylesheet"
+  href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+  integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
+  crossorigin="anonymous"
+/>
   <title>URL Details</title>
 </head>
 <body>
+  <%- include('partials/_header') %>
   <h1>URL Details</h1>
-  <p>Short URL: <%= shortURL %></p>
+  <p>Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a> </p>
+  
   <p>Long URL: <%= url.longURL %></p>
   <form action="/urls/<%= shortURL %>" method="POST">
     <label for="longURL">New Long URL:</label>
